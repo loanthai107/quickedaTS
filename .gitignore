@@ -1,6 +1,7 @@
 # History files
 .Rhistory
 .Rapp.history
+.DS_Store
 
 # Session Data files
 .RData
@@ -11,8 +12,7 @@
 
 # Example code in package build process
 *-Ex.R
-prepare_data.R
-main.R
+*_local.R
 
 # Output files from R CMD build
 /*.tar.gz
