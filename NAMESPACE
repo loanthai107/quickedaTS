@@ -2,3 +2,6 @@
 
 export(hallo)
 export(tabular_preprocess_data)
+export(tabular_single_value_plots)
+import(dplyr)
+import(ggplot2)

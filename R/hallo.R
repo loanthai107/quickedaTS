@@ -1,7 +1,7 @@
 #' check hallo function
 #'
 #' @returns Hallo, Loan Thai!
-#' @export hallo
+#' @export
 #'
 #' @examples hallo()
 hallo <- function() {
