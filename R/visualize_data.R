@@ -39,7 +39,6 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     h <- 10
   }
 
-  data$diff_value <- c(NA, diff(data$value))
   value_ts <- ts(data$value, frequency = freq)
 
   # fit takes long time to run -> set null first, only calculate when call function and store it right away for later usage
@@ -78,7 +77,10 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
 
   # 3 Difference across day per year
-  self$diff_value_plot <- function(time_col='date') {
+  self$diff_value_plot <- function(time_col = 'date') {
+
+    data$diff_value <- c(NA, diff(data$value))
+
     if (time_col == 'date') {
       p <- ggplot(data, aes(date, diff_value))
 
@@ -107,7 +109,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
   }
 
   # 5. Moving Average Plot
-  self$moving_average_plot <- function(k=10) {
+  self$moving_average_plot <- function(k = 10) {
     data$ma <- zoo::rollmean(data$value, k = k, fill = NA)
     MA_str_name <- paste0(freq, '-step MA')
 
@@ -158,7 +160,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
 
   # 9. Time Series Decomposition with forecast
-  self$forecast_plot <- function(n_forecast=NULL) {
+  self$forecast_plot <- function(n_forecast = NULL) {
 
     if (is.null(self$fit)) {
       self$fit <- forecast::auto.arima(value_ts)
@@ -173,7 +175,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
-  # 7. Residual Plot
+  # 10. Residual Plot
   self$residual_plot <- function() {
 
     if (is.null(self$fit)) {
@@ -189,6 +191,55 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
       labs(title = "Residuals of ARIMA Model")
     return(p)
   }
+
+  # 11. Scatter Plot with Lagged Values (Lagged Relationships)
+  self$lag_plot <- function(n_lag = 1) {
+    data$lagk <- lag(data$value, n_lag)
+    df_tmp <- data[-n_lag,] # Remove the first n_lag rows with NA lag
+
+    p <- ggplot(df_tmp, aes(x = lagk, y = value)) +
+      geom_point() +
+      labs(title = paste(toupper(cname), "vs. Lagged", toupper(cname)),
+           x = paste0("(t-", n_lag, ")"), y = "(t)")
+    return(p)
+  }
+
+  # 12. Change Point Detection Plot
+  self$changepoint_plot <- function(n_changes = 5) {
+    cp <- changepoint::cpt.mean(data$value, method = "PELT")
+    # cp <- changepoint::cpt.mean(data$value, method="BinSeg", penalty="AIC", Q=n_changes)
+    change_points <- changepoint::cpts(cp)
+    cp_data <- data.frame(index = 1:length(data$value), value = data$value)
+    cp_data$change_point <- ifelse(cp_data$index %in% change_points, "Change Point", "No Change")
+
+    p <- ggplot(cp_data, aes(x = index, y = value, color = change_point)) +
+      geom_line() +
+      # geom_vline(xintercept = change_points, linetype = "dashed", color = "red") +
+      labs(title = paste("Change Points in", toupper(cname)), x = "Index", y = toupper(cname)) +
+      scale_color_manual(values = c("Change Point" = "red", "No Change" = "black"))
+    return(p)
+  }
+
+
+  # 10. Heatmap of Seasonal Patterns
+  self$heatmap_plot <- function() {
+
+    heatmap_data <- data %>%
+      group_by(year, month) %>% summarise(value = mean(value), .groups = "drop") %>%
+      tidyr::pivot_wider(names_from = month, values_from = value) %>%
+      select(-year) %>%
+      as.matrix()
+
+    rownames(heatmap_data) <- unique(data$year)
+
+    ## Remove rows (last year) with NaN
+    heatmap_data <- na.omit(heatmap_data)
+
+    heatmap(heatmap_data, scale = "column", main = paste(toupper(cname), "Seasonal Heatmap"))
+    p <- cowplot::ggdraw(recordPlot())
+    return(p)
+  }
+
 
 
 
