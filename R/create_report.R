@@ -43,3 +43,25 @@ tabular_single_value_report_P02 <- function(plot_func, output_path='output/tabul
   ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
   cat(paste("Report saved to:", output_path))
 }
+
+
+tabular_single_value_report_P03 <- function(plot_func, output_path='output/tabular_single_value_report_P03.pdf') {
+  # Generate plots
+  p1 <- plot_func$acf_plot()
+  p2 <- plot_func$pacf_plot()
+  p3 <- plot_func$avg_monthly_plot()
+
+  # Combine plots
+  n_plots = 3
+  rel_heights = c(1,1,3)
+
+  combined_plot <- cowplot::plot_grid(p1, p2, p3,
+                                      nrow = n_plots,
+                                      rel_heights = rel_heights,
+                                      align='hv')
+
+  # Save as PDF
+  ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
+  cat(paste("Report saved to:", output_path))
+}
+

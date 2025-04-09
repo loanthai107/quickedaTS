@@ -173,7 +173,8 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     p <- ggplot(df_tmp, aes(year, avg_value)) +
       geom_point() +
       geom_smooth(formula = y ~ x, method = lm) +
-      facet_wrap(month~.)
+      facet_wrap(month~.) +
+      labs(title = 'Average monthly aggregation per year')
     return(p)
   }
 
