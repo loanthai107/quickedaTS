@@ -58,3 +58,98 @@ tabular_preprocess_data <- function(data, values_cols, time_col='date', time_fre
 
   return(data)
 }
+
+
+
+# Function to get datetime from filenames
+paths_to_datetimeindex <- function(paths) {
+  # Extract filenames from paths
+  filenames <- basename(paths)
+  # Extract first 8 characters and convert to dates
+  dates <- lubridate::ymd(substr(filenames, 1, 8))
+
+  # Drop duplicated dates
+  dup_ind <- duplicated(dates) | duplicated(dates, fromLast = FALSE)
+  if (length(dup_ind) > 0) {
+    paths <- paths[!dup_ind]
+    dates <- dates[!dup_ind]
+  }
+
+  return(list("paths" = paths, "dates" = dates))
+}
+
+
+
+#' Standardize raster data
+#'
+#' @param data_path, ex: 'data/sentinel2'
+#' @param suffix: file type, ex: '.tif'
+#' @param band_names: list of bands, ex: c("B2", "B3", "B4", "B8", "B11", "B12")
+#'
+#' @returns standardized raster data as a stars object with 3 dimensions (x, y, time)
+#' @export
+#'
+#' @examples raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
+raster_preprocess_data <- function(data_path, suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12")) {
+  # Get list of GeoTIFF files
+  file_ls <- Sys.glob(paste0(data_path, '/*', suffix))
+
+  # Create a time variable from filenames
+  res <- paths_to_datetimeindex(file_ls)
+  file_ls <- res$paths
+  time_dates <- res$dates
+
+  # Process each file individually
+  all_rasters_by_band <- list()
+
+  # Initialize lists for each band
+  for (band in band_names) {
+    all_rasters_by_band[[band]] <- list()
+  }
+
+  # Process each file and organize by band
+  for (i in seq_along(file_ls)) {
+    # Read the raster
+    r <- terra::rast(file_ls[i])
+
+    # Check if number of layers matches expected band count
+    n_actual_layers <- terra::nlyr(r)
+    if (n_actual_layers != length(band_names)) {
+      warning(paste("File", file_ls[i], "has", n_actual_layers, "layers, expected", length(band_names)))
+      next
+    }
+
+    # Assign proper names to each layer
+    names(r) <- band_names
+
+    # Separate each band and add to its respective list
+    for (j in seq_along(band_names)) {
+      band_layer <- r[[j]]
+      terra::time(band_layer) <- time_dates[i]
+      all_rasters_by_band[[band_names[j]]][[i]] <- band_layer
+    }
+  }
+
+  # Combine rasters by band
+  band_stacks <- list()
+  for (band in band_names) {
+    if (length(all_rasters_by_band[[band]]) > 0) {
+      band_stacks[[band]] <- do.call(c, all_rasters_by_band[[band]])
+    }
+  }
+
+  # Convert each band stack to stars objects
+  stars_list <- list()
+  for (band in names(band_stacks)) {
+    stars_list[[band]] <- stars::st_as_stars(band_stacks[[band]])
+  }
+
+  # Combine all stars objects into one
+  raster_data <- do.call(c, stars_list)
+  return(raster_data)
+}
+
+
+
+
+
