@@ -36,7 +36,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
   } else if (time_frequency == 'yearly') {
     freq <- 2
-    h <- 10
+    h <- 5
   }
 
   value_ts <- ts(data$value, frequency = freq)
@@ -48,7 +48,11 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
   self$line_plot <- function() {
     p <- ggplot(data, aes(x = date, y = value)) +
       geom_line() +
-      labs(title = paste(toupper(cname), 'Levels Over Time'), x = 'time_step', y = cname)
+      labs(title = paste(toupper(cname), 'Levels Over Time'), x = 'time_step', y = cname) +
+      # Format x-axis to match the original
+      scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+      # Rotate x label
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     return(p)
   }
 
@@ -98,6 +102,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
+
   # 4. Seasonal Decomposition Plot
   self$seasonal_decomposition_plot <- function() {
     decomp <- stl(value_ts, s.window = 'periodic')
@@ -108,20 +113,47 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
+
   # 5. Moving Average Plot
-  self$moving_average_plot <- function(k = 10) {
-    data$ma <- zoo::rollmean(data$value, k = k, fill = NA)
+  # v01
+  self$moving_average_plot_v01 <- function(ma_step = NULL) {
+    if (is.null(ma_step)) {
+      ma_step <- h
+    }
+
+    data$ma <- zoo::rollmean(data$value, k = ma_step, fill = NA)
     MA_str_name <- paste0(freq, '-step MA')
 
     p <- ggplot(data, aes(x = date)) +
       geom_line(aes(y = value, color = 'Original')) +
       geom_line(aes(y = ma, color = 'MA')) +
       labs(title = paste0(toupper(cname), ' with ', k, '-step Moving Average'), x = 'time_step', y = cname) +
-      scale_color_manual(values = c('Original' = 'black', 'MA' = 'orange')) +
-      # Format x-axis to match the original
-      scale_x_date(date_breaks = "6 months", date_labels = "%Y-%m")
+      scale_color_manual(values = c('Original' = 'black', 'MA' = 'blue'))
     return(p)
   }
+
+  # v02
+  self$moving_average_plot_v02 <- function(ma_step = NULL) {
+    if (is.null(ma_step)) {
+      ma_step <- h
+    }
+
+    data$ma <- zoo::rollmean(data$value, k = ma_step, fill = NA)
+    MA_str_name <- paste0(freq, '-step MA')
+
+    p <- ggplot(data, aes(x = date)) +
+      geom_line(aes(y = value, color = 'Original data')) +
+      geom_line(aes(y = ma, color = 'MA')) +
+      labs(title = paste0(toupper(cname), ' over time with ', ma_step, '-step Moving Average'), x = 'time_step', y = cname) +
+      scale_color_manual(values = c('Original data' = 'black', 'MA' = 'green')) +
+      # Format x-axis to match the original
+      scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+      # Rotate x label
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+    return(p)
+  }
+
 
   # 6. Seasonality Boxplot
   self$seasonality_boxplot <- function() {
@@ -130,6 +162,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
       labs(title = paste(toupper(cname), 'Levels by Month'), x = 'month', y = cname)
     return(p)
   }
+
 
   # 7. Monthly mean
   self$avg_monthly_plot <- function() {
@@ -143,6 +176,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
       facet_wrap(month~.)
     return(p)
   }
+
 
   # 8. ACF and PACF Plots
   self$acf_plot <- function() {
@@ -175,6 +209,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
+
   # 10. Residual Plot
   self$residual_plot <- function() {
 
@@ -192,6 +227,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
+
   # 11. Scatter Plot with Lagged Values (Lagged Relationships)
   self$lag_plot <- function(n_lag = 1) {
     data$lagk <- lag(data$value, n_lag)
@@ -204,6 +240,7 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     return(p)
   }
 
+
   # 12. Change Point Detection Plot
   self$changepoint_plot <- function(n_changes = 5) {
     cp <- changepoint::cpt.mean(data$value, method = "PELT")
@@ -215,13 +252,13 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     p <- ggplot(cp_data, aes(x = index, y = value, color = change_point)) +
       geom_line() +
       # geom_vline(xintercept = change_points, linetype = "dashed", color = "red") +
-      labs(title = paste("Change Points in", toupper(cname)), x = "Index", y = toupper(cname)) +
+      labs(title = paste("Change Points in", toupper(cname)), x = "index", y = cname) +
       scale_color_manual(values = c("Change Point" = "red", "No Change" = "black"))
     return(p)
   }
 
 
-  # 10. Heatmap of Seasonal Patterns
+  # 13. Heatmap of Seasonal Patterns
   self$heatmap_plot <- function() {
 
     heatmap_data <- data %>%
