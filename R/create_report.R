@@ -65,3 +65,24 @@ tabular_single_value_report_P03 <- function(plot_func, output_path='output/tabul
   cat(paste("Report saved to:", output_path))
 }
 
+
+tabular_single_value_report_P04 <- function(plot_func, output_path='output/tabular_single_value_report_P04.pdf') {
+  # Generate plots
+  p1 <- plot_func$seasonal_decomposition_plot()
+  p2 <- plot_func$heatmap_plot()
+
+  # Combine plots
+  n_plots = 3
+  rel_heights = c(2, 0.5, 2)
+
+  combined_plot <- cowplot::plot_grid(p1, NULL, p2,
+                                      nrow = n_plots,
+                                      rel_heights = rel_heights,
+                                      align='hv')
+
+  # Save as PDF
+  ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
+  cat(paste("Report saved to:", output_path))
+}
+
+
