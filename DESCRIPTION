@@ -16,6 +16,12 @@ Depends:
     R (>= 3.5)
 LazyData: true
 Imports: 
+    lubridate,
     dplyr,
+    ggplot2,
     forecast,
-    ggplot2
+    changepoint,
+    cowplot,
+    zoo,
+    tidyr,
+    pdftools

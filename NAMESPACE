@@ -3,5 +3,6 @@
 export(hallo)
 export(tabular_preprocess_data)
 export(tabular_single_value_plots)
+export(tabular_single_value_report_combine)
 import(dplyr)
 import(ggplot2)
