@@ -79,7 +79,6 @@ paths_to_datetimeindex <- function(paths) {
 }
 
 
-
 #' Standardize raster data
 #'
 #' @param data_path, ex: 'data/sentinel2'
@@ -148,8 +147,3 @@ raster_preprocess_data <- function(data_path, suffix = '.tif', band_names = c("B
   raster_data <- do.call(c, stars_list)
   return(raster_data)
 }
-
-
-
-
-

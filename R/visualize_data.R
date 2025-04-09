@@ -1,11 +1,3 @@
-# library(ggplot2)
-# library(dplyr)
-# library(forecast)
-
-# usethis::use_package("ggplot2")
-# usethis::use_package("dplyr")
-# usethis::use_package("forecast")
-
 #' Visualization functions for tabular data, single value
 #'
 #' @param data: standardized data
@@ -298,8 +290,78 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
   }
 
 
+  # Return the environment with all methods
+  return(self)
+}
 
 
+
+raster_multiple_bands_plots <- function(raster_data, n_bands_explore = 6) {
+
+  # Create a new environment/object to store our data and methods
+  self <- new.env()
+
+  band_names <- names(raster_data)[1:n_bands_explore]
+  time_dates <- stars::st_get_dimension_values(raster_data, "time")
+
+  # 1. Plot for first date of all bands
+  self$one_date_all_band_plot <- function(date_order = 1) {
+    ## Filter first band and first date
+    # tmp_raster <- raster_data[band_names[1]] %>%
+    #                 filter(time == as.Date(time_dates[1])) %>%
+    #                 as("SpatRaster")
+
+    ## or
+    # tmp_raster <- raster_data[1,,,1]
+
+    # Filter all bands of first date
+    tmp_raster <- terra::rast(raster_data[,,,date_order])
+
+    par(oma=c(0,0,2,0))  # Create outer margin area for the title
+    terra::plot(tmp_raster)
+    mtext(paste0('Plot of date (', time_dates[date_order], ') of all bands'),
+          side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
+
+    p <- cowplot::ggdraw(recordPlot())
+    return(p)
+  }
+
+
+  # 2. Scatter plot of pairs of bands of one date
+  self$one_date_scatter_band_plot <- function(date_order = 1, band_order = 1) {
+    target_band <- band_names[band_order]
+    rest_bands <- band_names[-band_order]
+
+    # Get raster of date_order
+    tmp_raster <- raster_data[,,,date_order]
+
+    # Convert to dataframe for plotting
+    tmp_df <- tmp_raster %>% as.data.frame()
+
+    # Set up a 2x3 plotting area with space for a title
+    par(mfrow=c(n_bands_explore/3,3), oma=c(0,0,2,0))
+
+    for (i in 1:length(rest_bands)) {
+      tmp_df_2bands <- tmp_df %>%
+                          select(c(target_band, rest_bands[i])) %>%
+                          rename(
+                            target_band = target_band,
+                            other_band = rest_bands[i])
+
+      # Create scatter plots of target band with others
+      plot(tmp_df_2bands$target_band, tmp_df_2bands$other_band,
+           main=paste(target_band, 'vs', rest_bands[i]),
+           xlab=target_band, ylab=rest_bands[i], pch=20)
+    }
+
+    # Add the overall title
+    mtext(paste0('Scatter plot of ', target_band, ' with other bands of date (', time_dates[date_order], ')'),
+          side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
+
+
+    p <- cowplot::ggdraw(recordPlot())
+    return(p)
+  }
 
 
 
@@ -310,4 +372,13 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
   return(self)
 }
 
+
+
+
+# raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
+
+# plot_func <- raster_multiple_bands_plots(raster_data)
+# p <- plot_func$first_date_all_band_plot()
+# p <- plot_func$one_date_scatter_band_plot()
+# p
 
