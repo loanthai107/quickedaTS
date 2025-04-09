@@ -42,7 +42,7 @@ tabular_preprocess_data <- function(data, values_cols, time_col='date', time_fre
     data$date <- paste0(data$year, "-", data$month, "-01")
 
   } else if (time_frequency == 'yearly') {
-    data$year <- data$time_step
+    data$year <- as.character(data$time_step)
     data$month <- '01'
     data$date <- paste0(data$year, "-01-01")
   }
