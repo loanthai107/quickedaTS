@@ -93,12 +93,27 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
     } else {
       # time_col == 'year'
-      p <- ggplot(data, aes(year, diff_value))
+      n_years <- length(unique(data$year))
 
+      # Handle too many years
+      if (n_years > 23) {
+        data$year_dummy <- as.Date(paste0(data$year, "-01-01"))
+
+        n_years_break <- ceiling(n_years / 23)
+        n_years_break <- paste(n_years_break, 'years')
+
+        p <- ggplot(data, aes(year_dummy, diff_value)) +
+          scale_x_date(date_breaks = n_years_break, date_labels = "%Y") +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+      } else {
+        p <- ggplot(data, aes(year, diff_value))
+      }
     }
 
     p <- p + geom_point() + geom_smooth(formula = y ~ x, method = lm) +
       labs(title = paste('Difference values of', toupper(cname), 'per', (time_col)))
+
     return(p)
   }
 
@@ -145,11 +160,15 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
       geom_line(aes(y = value, color = 'Original data')) +
       geom_line(aes(y = ma, color = 'MA')) +
       labs(title = paste0(toupper(cname), ' over time with ', ma_step, '-step Moving Average'), x = 'time_step', y = cname) +
-      scale_color_manual(values = c('Original data' = 'black', 'MA' = 'green')) +
-      # Format x-axis to match the original
-      scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
-      # Rotate x label
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      scale_color_manual(values = c('Original data' = 'black', 'MA' = 'green'))
+
+    if (nrow(data) < 2000 & time_frequency == "daily") {
+      p <- p +
+        # Format x-axis to match the original
+        scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+        # Rotate x label
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    }
 
     return(p)
   }
