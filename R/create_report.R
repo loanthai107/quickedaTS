@@ -45,11 +45,11 @@ tabular_single_value_report_combine <- function(original_data, cname, time_col='
 
 tabular_single_value_report_P01 <- function(plot_func, output_path='output/tabular_single_value_report_P01.pdf') {
   # Generate plots
-  p1 <- plot_func$moving_average_plot_v02()
-  p2 <- plot_func$forecast_plot()
-  p3 <- plot_func$residual_plot()
-  p4 <- plot_func$changepoint_plot()
-  p5 <- plot_func$diff_value_plot(time_col = 'date')
+  p1 <- sanity_check_plot(plot_func$moving_average_plot_v02())
+  p2 <- sanity_check_plot(plot_func$forecast_plot())
+  p3 <- sanity_check_plot(plot_func$residual_plot())
+  p4 <- sanity_check_plot(plot_func$changepoint_plot())
+  p5 <- sanity_check_plot(plot_func$diff_value_plot(time_col = 'date'))
 
 
   # Combine plots
@@ -69,11 +69,11 @@ tabular_single_value_report_P01 <- function(plot_func, output_path='output/tabul
 
 tabular_single_value_report_P02 <- function(plot_func, output_path='output/tabular_single_value_report_P02.pdf') {
   # Generate plots
-  p1 <- plot_func$diff_value_plot(time_col='month')
-  p2 <- plot_func$seasonality_boxplot()
-  p3 <- plot_func$diff_value_plot(time_col='year')
-  p4 <- plot_func$doy_line_plot_v02()
-  p5 <- plot_func$lag_plot()
+  p1 <- sanity_check_plot(plot_func$diff_value_plot(time_col='month'))
+  p2 <- sanity_check_plot(plot_func$seasonality_boxplot())
+  p3 <- sanity_check_plot(plot_func$diff_value_plot(time_col='year'))
+  p4 <- sanity_check_plot(plot_func$doy_line_plot_v02())
+  p5 <- sanity_check_plot(plot_func$lag_plot())
 
   # Combine plots
   n_plots = 5
@@ -92,9 +92,9 @@ tabular_single_value_report_P02 <- function(plot_func, output_path='output/tabul
 
 tabular_single_value_report_P03 <- function(plot_func, output_path='output/tabular_single_value_report_P03.pdf') {
   # Generate plots
-  p1 <- plot_func$acf_plot()
-  p2 <- plot_func$pacf_plot()
-  p3 <- plot_func$avg_monthly_plot()
+  p1 <- sanity_check_plot(plot_func$acf_plot())
+  p2 <- sanity_check_plot(plot_func$pacf_plot())
+  p3 <- sanity_check_plot(plot_func$avg_monthly_plot())
 
   # Combine plots
   n_plots = 3
@@ -113,8 +113,8 @@ tabular_single_value_report_P03 <- function(plot_func, output_path='output/tabul
 
 tabular_single_value_report_P04 <- function(plot_func, output_path='output/tabular_single_value_report_P04.pdf') {
   # Generate plots
-  p1 <- plot_func$seasonal_decomposition_plot()
-  p2 <- plot_func$heatmap_plot()
+  p1 <- sanity_check_plot(plot_func$seasonal_decomposition_plot())
+  p2 <- sanity_check_plot(plot_func$heatmap_plot())
 
   # Combine plots
   n_plots = 3
@@ -128,6 +128,16 @@ tabular_single_value_report_P04 <- function(plot_func, output_path='output/tabul
   # Save as PDF
   ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
   cat(paste0("Report saved to: ", output_path, "\n"))
+}
+
+
+sanity_check_plot <- function(func_name) {
+  result <- try(func_name, silent = TRUE)
+  if (inherits(result, 'try-error')) {
+    cat(result)
+    return(NULL)
+  }
+  return(result)
 }
 
 
