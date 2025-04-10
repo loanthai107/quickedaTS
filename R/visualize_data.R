@@ -296,7 +296,10 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
 
 
-raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "B2"),
+raster_multiple_bands_plots <- function(raster_data,
+                                        RGB_bands = c("B4", "B3", "B2"),
+                                        indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
+                                                            "NDVI" = "(B8 - B4) / (B8 + B4)"),
                                         band_order = 1, date_order = 1,
                                         n_bands_explore = 6, n_first_date = 6) {
 
@@ -459,12 +462,34 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
       coord_equal() +
       labs(title = paste("RGB Composite of first", n_first_date, "dates")) +
       theme_minimal() +
-      theme(legend.position = "none")
+      theme(aspect.ratio=0.6)
     return(p)
   }
 
 
+  # 5.1 Compute indices
+  compute_index <- function(formula_str) {
+    # Create an environment with the raster bands as variables
+    band_env <- new.env()
+    for(band_name in band_names) {
+      band_env[[band_name]] <- raster_data[[band_name]]
+    }
 
+    # Evaluate the formula in that environment
+    eval(parse(text = formula_str), envir = band_env)
+  }
+
+  if (length(indices_formula) > 0) {
+    for (i in seq(1, length(indices_formula))){
+      formula <- indices_formula[i]
+      # Print out for double check
+      print(paste('DOUBLE CHECK:', names(formula), "is", formula))
+
+      # Compute new index value (a new band) in raster data
+      raster_data[[names(formula)]] <- compute_index(as.character(formula))
+    }
+    cat('Computing indices:', names(indices_formula), 'done!')
+  }
 
 
 
