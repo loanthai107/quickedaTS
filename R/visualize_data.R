@@ -296,7 +296,9 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
 
 
-raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "B2")) {
+raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "B2"),
+                                        band_order = 1, date_order = 1,
+                                        n_bands_explore = 6, n_first_date = 6) {
 
   # Create a new environment/object to store our data and methods
   self <- new.env()
@@ -308,22 +310,34 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
   band_names <- names(raster_data)
   time_dates <- stars::st_get_dimension_values(raster_data, "time")
 
+  # Align params to fit raster attr
+  n_bands_explore <- min(n_bands_explore, length(band_names))
+  n_first_date <- min(n_first_date, length(time_dates))
+
+  if (band_order > length(band_names)) {
+    cat('ERROR: band_order out of range\nAvailable values are:', c(1:length(band_names)))
+  }
+  if (date_order > length(time_dates)) {
+    cat('ERROR: date_order out of range\nAvailable values are:', c(1:length(time_dates)))
+  }
+
+
   # 0. Check attr of stars raster object
   # 0.1 band_names
   self$get_band_names <- function() {
-    cat(paste('Raster data has', length(band_names), 'bands\n'))
+    cat('Raster data has', length(band_names), 'bands\n')
     return(band_names)
   }
 
   # 0.2 time_dates
   self$get_time_dates <- function() {
-    cat(paste('Raster data has', length(time_dates), 'dates\n'))
+    cat('Raster data has', length(time_dates), 'dates\n')
     return(time_dates)
   }
 
 
   # 1. Plot for one date of all bands
-  self$one_date_all_band_plot <- function(date_order = 1, n_bands_explore = 6) {
+  self$one_date_all_band_plot <- function() {
     ## Filter first band and first date
     # tmp_raster <- raster_data[band_names[1]] %>%
     #                 filter(time == as.Date(time_dates[1])) %>%
@@ -333,7 +347,6 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
     # tmp_raster <- raster_data[1,,,1]
 
     # Filter all bands of first date
-    n_bands_explore <- min(n_bands_explore, length(band_names))
     tmp_raster <- terra::rast(raster_data[1:n_bands_explore,,,date_order])
 
     # Create outer margin area for the title
@@ -353,7 +366,7 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
 
 
   # 2. Scatter plot of pairs of bands of one date
-  self$one_date_scatter_band_plot <- function(date_order = 1, band_order = 1) {
+  self$one_date_scatter_band_plot <- function() {
     target_band <- band_names[band_order]
     rest_bands <- band_names[-band_order]
 
@@ -389,9 +402,8 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
 
 
   # 3. Plot of one band of first N dates
-  self$one_band_first_N_dates <- function(band_order = 1, n_first_date = 6, is_gray_scale = FALSE) {
+  self$one_band_first_N_dates <- function(is_gray_scale = FALSE) {
     # Filter data
-    n_first_date <- min(n_first_date, length(time_dates))
     tmp_raster <- raster_data[band_order,,,1:n_first_date]
 
     # Create a combined plot
@@ -402,7 +414,7 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
     }
 
     # Add an overall title
-    do.call("mtext", c(paste("Plot of band", band_names[band_order], "for the first", n_first_date, "dates"),
+    do.call("mtext", c(paste("Plot of band", band_names[band_order], "of first", n_first_date, "dates"),
                        mtext_kwargs))
 
     p <- cowplot::ggdraw(recordPlot())
@@ -411,6 +423,47 @@ raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "
 
 
   # 4. Plot of RGB images of first 6 dates
+  self$RGB_images_first_N_dates <- function() {
+    # Filter data
+    tmp_raster <- raster_data[RGB_bands][,,,1:n_first_date]
+
+    # Convert to data frame
+    tmp_df <- as.data.frame(tmp_raster, xy = TRUE)
+
+    # Generalize cnames
+    colnames(tmp_df) <- c("x", "y", "time", "R", "G", "B" )
+
+    # Drop NA
+    tmp_df <- tmp_df %>% tidyr::drop_na(R, G, B)
+
+    # Set up RGB values with scaling (0-255)
+    # Robust scaling (similar to robust=True)
+    scale_robust <- function(x) {
+      q <- quantile(x, c(0.02, 0.98), na.rm = TRUE)
+      x[x < q[1]] <- q[1]
+      x[x > q[2]] <- q[2]
+      return((x - q[1]) / (q[2] - q[1]) * 255)
+    }
+
+    tmp_df$R <- scale_robust(tmp_df$R)
+    tmp_df$G <- scale_robust(tmp_df$G)
+    tmp_df$B <- scale_robust(tmp_df$B)
+
+    # Create RGB hex colors
+    tmp_df$color <- rgb(tmp_df$R/255, tmp_df$G/255, tmp_df$B/255)
+
+    p <- ggplot(tmp_df, aes(x = x, y = y, fill = color)) +
+      geom_raster()  +
+      facet_wrap(time~.) +
+      scale_fill_identity() +
+      coord_equal() +
+      labs(title = paste("RGB Composite of first", n_first_date, "dates")) +
+      theme_minimal() +
+      theme(legend.position = "none")
+    return(p)
+  }
+
+
 
 
 
@@ -437,6 +490,5 @@ plot_func$get_time_dates()
 p <- plot_func$one_date_all_band_plot()
 p <- plot_func$one_date_scatter_band_plot()
 p <- plot_func$one_band_first_N_dates()
+p <- plot_func$RGB_images_first_N_dates()
 p
-
-
