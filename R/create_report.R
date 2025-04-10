@@ -130,7 +130,7 @@ tabular_single_value_report_P04 <- function(plot_func, output_path='output/tabul
   cat(paste0("Report saved to: ", output_path, "\n"))
 }
 
-
+# Function to check whether plotting function has any error
 sanity_check_plot <- function(func_name) {
   result <- try(func_name, silent = TRUE)
   if (inherits(result, 'try-error')) {
@@ -139,5 +139,30 @@ sanity_check_plot <- function(func_name) {
   }
   return(result)
 }
+
+
+
+raster_multiple_bands_report_P01 <- function(plot_func, output_path='output/raster_multiple_bands_report_P01.pdf') {
+  # Generate plots
+  p1 <- sanity_check_plot(plot_func$one_date_all_band_plot())
+  p2 <- sanity_check_plot(plot_func$one_date_scatter_band_plot())
+
+  # Combine plots
+  n_plots = 3
+  rel_heights = c(1, 0.5, 2)
+
+  combined_plot <- cowplot::plot_grid(p1, NULL, p2,
+                                      nrow = n_plots,
+                                      rel_heights = rel_heights,
+                                      align='hv')
+
+  # Save as PDF
+  ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
+  cat(paste0("Report saved to: ", output_path, "\n"))
+}
+
+
+plot_func <- raster_multiple_bands_plots(raster_data)
+raster_multiple_bands_report_P01(plot_func)
 
 

@@ -296,16 +296,34 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
 
 
-raster_multiple_bands_plots <- function(raster_data, n_bands_explore = 6) {
+raster_multiple_bands_plots <- function(raster_data, RGB_bands = c("B4", "B3", "B2")) {
 
   # Create a new environment/object to store our data and methods
   self <- new.env()
 
-  band_names <- names(raster_data)[1:n_bands_explore]
+  # For plot title
+  mtext_kwargs <- list(side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
+
+  # Raster attributes
+  band_names <- names(raster_data)
   time_dates <- stars::st_get_dimension_values(raster_data, "time")
 
-  # 1. Plot for first date of all bands
-  self$one_date_all_band_plot <- function(date_order = 1) {
+  # 0. Check attr of stars raster object
+  # 0.1 band_names
+  self$get_band_names <- function() {
+    cat(paste('Raster data has', length(band_names), 'bands\n'))
+    return(band_names)
+  }
+
+  # 0.2 time_dates
+  self$get_time_dates <- function() {
+    cat(paste('Raster data has', length(time_dates), 'dates\n'))
+    return(time_dates)
+  }
+
+
+  # 1. Plot for one date of all bands
+  self$one_date_all_band_plot <- function(date_order = 1, n_bands_explore = 6) {
     ## Filter first band and first date
     # tmp_raster <- raster_data[band_names[1]] %>%
     #                 filter(time == as.Date(time_dates[1])) %>%
@@ -315,12 +333,19 @@ raster_multiple_bands_plots <- function(raster_data, n_bands_explore = 6) {
     # tmp_raster <- raster_data[1,,,1]
 
     # Filter all bands of first date
-    tmp_raster <- terra::rast(raster_data[,,,date_order])
+    n_bands_explore <- min(n_bands_explore, length(band_names))
+    tmp_raster <- terra::rast(raster_data[1:n_bands_explore,,,date_order])
 
-    par(oma=c(0,0,2,0))  # Create outer margin area for the title
+    # Create outer margin area for the title
+    par(oma=c(0,0,2,0))
     terra::plot(tmp_raster)
-    mtext(paste0('Plot of date (', time_dates[date_order], ') of all bands'),
-          side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
+
+    # Add an overall title
+    do.call("mtext", c(paste0('Plot for date (', time_dates[date_order], ') of all bands'),
+                       mtext_kwargs))
+    # mtext(paste0('Plot for date (', time_dates[date_order], ') of all bands'),
+    #       side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3
+    #       )
 
     p <- cowplot::ggdraw(recordPlot())
     return(p)
@@ -355,13 +380,41 @@ raster_multiple_bands_plots <- function(raster_data, n_bands_explore = 6) {
     }
 
     # Add the overall title
-    mtext(paste0('Scatter plot of ', target_band, ' with other bands of date (', time_dates[date_order], ')'),
-          side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
-
+    do.call("mtext", c(paste0('Scatter plot of ', target_band, ' with other bands of date (', time_dates[date_order], ')'),
+                       mtext_kwargs))
 
     p <- cowplot::ggdraw(recordPlot())
     return(p)
   }
+
+
+  # 3. Plot of one band of first N dates
+  self$one_band_first_N_dates <- function(band_order = 1, n_first_date = 6, is_gray_scale = FALSE) {
+    # Filter data
+    n_first_date <- min(n_first_date, length(time_dates))
+    tmp_raster <- raster_data[band_order,,,1:n_first_date]
+
+    # Create a combined plot
+    if (is_gray_scale) {
+      terra::plot(raster_data[band_order,,,1:n_first_date])
+    } else {
+      terra::plot(raster_data[band_order,,,1:n_first_date], col = viridis::viridis(100))
+    }
+
+    # Add an overall title
+    do.call("mtext", c(paste("Plot of band", band_names[band_order], "for the first", n_first_date, "dates"),
+                       mtext_kwargs))
+
+    p <- cowplot::ggdraw(recordPlot())
+    return(p)
+  }
+
+
+  # 4. Plot of RGB images of first 6 dates
+
+
+
+
 
 
 
@@ -376,9 +429,14 @@ raster_multiple_bands_plots <- function(raster_data, n_bands_explore = 6) {
 
 
 # raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
+plot_func <- raster_multiple_bands_plots(raster_data)
 
-# plot_func <- raster_multiple_bands_plots(raster_data)
-# p <- plot_func$first_date_all_band_plot()
-# p <- plot_func$one_date_scatter_band_plot()
-# p
+plot_func$get_band_names()
+plot_func$get_time_dates()
+
+p <- plot_func$one_date_all_band_plot()
+p <- plot_func$one_date_scatter_band_plot()
+p <- plot_func$one_band_first_N_dates()
+p
+
 
