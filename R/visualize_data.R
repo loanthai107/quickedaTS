@@ -295,13 +295,13 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 }
 
 
-
 raster_multiple_bands_plots <- function(raster_data,
                                         RGB_bands = c("B4", "B3", "B2"),
                                         indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
                                                             "NDVI" = "(B8 - B4) / (B8 + B4)"),
                                         band_order = 1, date_order = 1,
-                                        n_bands_explore = 6, n_first_date = 6) {
+                                        n_bands_explore = 6, n_first_date = 6,
+                                        x_order = 1, y_order = 1, x_value = NULL, y_value = NULL) {
 
   # Create a new environment/object to store our data and methods
   self <- new.env()
@@ -476,7 +476,7 @@ raster_multiple_bands_plots <- function(raster_data,
   }
 
 
-  # 5.1 Compute indices
+  # 5 Compute indices
   compute_index <- function(formula_str) {
     # Create an environment with the raster bands as variables
     band_env <- new.env()
@@ -503,6 +503,65 @@ raster_multiple_bands_plots <- function(raster_data,
   }
 
 
+  # 6. Line chart of all bands at specific location (x,y) during time
+  self$all_bands_all_dates_xy <- function() {
+    # Filter data
+    if (is.null(x_value)) {
+      tmp_raster <- raster_data[, x_order, y_order, ]
+
+    } else {
+      # Get dimension values
+      x_values <- stars::st_get_dimension_values(raster_data, "x")
+      y_values <- stars::st_get_dimension_values(raster_data, "y")
+
+      # Find closest indices
+      x_order <- which.min(abs(x_values - x_value))
+      y_order <- which.min(abs(y_values - y_value))
+
+      # Extract the value at those indices
+      tmp_raster <- raster_data[, x_order, y_order, ]
+    }
+
+
+    # Convert to a data frame for easier manipulation
+    tmp_df <- as.data.frame(tmp_raster, long = TRUE)
+
+    # Resample to daily time steps and interpolate missing values
+    # First, ensure the 'time' column is of Date type
+    tmp_df$time <- as.Date(tmp_df$time)
+
+
+    # p1 <- ggplot(tmp_df, aes(x = time))
+    # for (b in band_names) {
+    #   print(b)
+    #   p1 <- p1 + geom_line(aes(y = tmp_df[, b]))
+    # }
+    #
+    # p1 <- p1 + labs(title = paste0('Band values across dates at loc x=', tmp_df$x[1], ' and y=', tmp_df$y[1]), color = "Legend") +
+    #   theme_minimal()
+
+
+    # Reshape data to long format
+    long_df <- tmp_df %>%
+                  tidyr::pivot_longer(cols = all_of(c(band_names, names(indices_formula))),
+                                      names_to = "band",
+                                      values_to = "value")
+    # Add band_type column
+    long_df$band_type <- with(long_df, ifelse(band %in% band_names, "band", "index"))
+
+    # Create plot
+    p <- ggplot(long_df, aes(x = time, y = value, color = band)) +
+      geom_line() +
+      # facet_wrap(band_type~., scales = "free_y", nrow = 2) +
+      facet_grid(band_type~., scales = "free_y") +
+      labs(title = paste0('Band values across dates at loc x=', tmp_df$x[1], ' and y=', tmp_df$y[1]))
+
+    return(p)
+  }
+
+
+
+
 
 
 
@@ -517,8 +576,8 @@ raster_multiple_bands_plots <- function(raster_data,
 
 
 
-# raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
-plot_func <- raster_multiple_bands_plots(raster_data)
+raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
+plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
 
 plot_func$get_band_names()
 plot_func$get_time_dates()
@@ -529,6 +588,12 @@ p <- plot_func$one_band_first_N_dates(is_gray_scale = TRUE)
 p <- plot_func$RGB_images_first_N_dates()
 p <- plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::mako)
 p <- plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis)
+p <- plot_func$all_bands_all_dates_xy()
 p
 
+
+raster_data <- raster_preprocess_data("/Users/phuongloan/Documents/Study/01_Master_EAGLE/Program/03_introduction_to_programming_and_geostatistics_in_EO/git_repo/Time_Series_Analysis_in_Remote Sensing/data/module1_data/T1/s2")
+plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
+p <- plot_func$all_bands_all_dates_xy()
+p
 

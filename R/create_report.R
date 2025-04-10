@@ -210,8 +210,8 @@ raster_multiple_bands_report_P03 <- function(plot_func, output_path='output/rast
   plot_ls <- list()
   rel_heights <- c()
   for (i in 1:length(plot_func$index_names)) {
-    p <- plot_func$one_band_first_N_dates(band_name = plot_func$index_names[i],
-                                          customr_color = color_ls[[i]])
+    p <- sanity_check_plot(plot_func$one_band_first_N_dates(band_name = plot_func$index_names[i],
+                                                            customr_color = color_ls[[i]]))
 
     if (length(plot_ls) == 0) {
       plot_ls[[length(plot_ls) + 1]] <- p
@@ -225,7 +225,6 @@ raster_multiple_bands_report_P03 <- function(plot_func, output_path='output/rast
 
   # Combine plots
   n_plots <- 2 * length(plot_func$index_names) - 1
-  print(length(plot_ls))
 
   combined_plot <- cowplot::plot_grid(plotlist = plot_ls,
                                       nrow = n_plots,
@@ -238,9 +237,31 @@ raster_multiple_bands_report_P03 <- function(plot_func, output_path='output/rast
 }
 
 
-plot_func <- raster_multiple_bands_plots(raster_data)
+raster_multiple_bands_report_P04 <- function(plot_func, output_path='output/raster_multiple_bands_report_P04.pdf') {
+  # Generate plots
+  p1 <- sanity_check_plot(plot_func$all_bands_all_dates_xy())
+
+  # Combine plots
+  n_plots = 1
+  rel_heights = c(1)
+
+  combined_plot <- cowplot::plot_grid(p1,
+                                      nrow = n_plots,
+                                      rel_heights = rel_heights,
+                                      align='hv')
+
+  # Save as PDF
+  ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
+  cat(paste0("Report saved to: ", output_path, "\n"))
+}
+
+
+
+
+plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
 raster_multiple_bands_report_P01(plot_func)
 raster_multiple_bands_report_P02(plot_func)
 raster_multiple_bands_report_P03(plot_func)
+raster_multiple_bands_report_P04(plot_func)
 
 
