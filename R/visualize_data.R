@@ -306,6 +306,9 @@ raster_multiple_bands_plots <- function(raster_data,
   # Create a new environment/object to store our data and methods
   self <- new.env()
 
+  # Control plot size
+  options(repr.plot.width=8, repr.plot.height=4)
+
   # For plot title
   mtext_kwargs <- list(side=3, adj=0, line=0, outer=TRUE, cex=1.5, font=3)
 
@@ -405,19 +408,25 @@ raster_multiple_bands_plots <- function(raster_data,
 
 
   # 3. Plot of one band of first N dates
-  self$one_band_first_N_dates <- function(is_gray_scale = FALSE) {
+  self$one_band_first_N_dates <- function(band_name = NULL, is_gray_scale = FALSE, customr_color = viridis::viridis(100)) {
     # Filter data
-    tmp_raster <- raster_data[band_order,,,1:n_first_date]
+    if (is.null(band_name)) {
+      band_name <- band_names[band_order]
+      tmp_raster <- raster_data[band_order,,,1:n_first_date]
+
+    } else {
+      tmp_raster <- raster_data[band_name][,,,1:n_first_date]
+    }
 
     # Create a combined plot
     if (is_gray_scale) {
-      terra::plot(raster_data[band_order,,,1:n_first_date])
+      terra::plot(tmp_raster)
     } else {
-      terra::plot(raster_data[band_order,,,1:n_first_date], col = viridis::viridis(100))
+      terra::plot(tmp_raster, col = customr_color)
     }
 
     # Add an overall title
-    do.call("mtext", c(paste("Plot of band", band_names[band_order], "of first", n_first_date, "dates"),
+    do.call("mtext", c(paste("Plot of band", band_name, "of first", n_first_date, "dates"),
                        mtext_kwargs))
 
     p <- cowplot::ggdraw(recordPlot())
@@ -488,6 +497,8 @@ raster_multiple_bands_plots <- function(raster_data,
       # Compute new index value (a new band) in raster data
       raster_data[[names(formula)]] <- compute_index(as.character(formula))
     }
+    # Store names of all indices
+    self$index_names <- names(indices_formula)
     cat('Computing indices:', names(indices_formula), 'done!')
   }
 
@@ -514,6 +525,10 @@ plot_func$get_time_dates()
 
 p <- plot_func$one_date_all_band_plot()
 p <- plot_func$one_date_scatter_band_plot()
-p <- plot_func$one_band_first_N_dates()
+p <- plot_func$one_band_first_N_dates(is_gray_scale = TRUE)
 p <- plot_func$RGB_images_first_N_dates()
+p <- plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::mako)
+p <- plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis)
 p
+
+
