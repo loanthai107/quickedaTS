@@ -504,7 +504,7 @@ raster_multiple_bands_plots <- function(raster_data,
 
 
   # 6. Line chart of all bands at specific location (x,y) during time
-  self$all_bands_all_dates_xy <- function() {
+  self$all_bands_all_dates_xy <- function(interpolate = FALSE) {
     # Filter data
     if (is.null(x_value)) {
       tmp_raster <- raster_data[, x_order, y_order, ]
@@ -530,16 +530,40 @@ raster_multiple_bands_plots <- function(raster_data,
     # First, ensure the 'time' column is of Date type
     tmp_df$time <- as.Date(tmp_df$time)
 
+    # Interpolate missing values
+    if (interpolate) {
 
-    # p1 <- ggplot(tmp_df, aes(x = time))
-    # for (b in band_names) {
-    #   print(b)
-    #   p1 <- p1 + geom_line(aes(y = tmp_df[, b]))
-    # }
-    #
-    # p1 <- p1 + labs(title = paste0('Band values across dates at loc x=', tmp_df$x[1], ' and y=', tmp_df$y[1]), color = "Legend") +
-    #   theme_minimal()
+      # Define the columns to interpolate
+      cols_to_interpolate <- c(band_names, names(indices_formula))
 
+      # Create complete time series
+      tmp_df <- tmp_df %>%
+                    tidyr::complete(time = seq(min(time), max(time), by = "1 day"),
+                                    tidyr::nesting(x, y)) %>%
+                    arrange(x, y, time) %>%
+                    group_by(x, y)
+
+      # Loop through each column and apply interpolation
+      for (col in cols_to_interpolate) {
+        # Create interpolated column name
+        interp_col_name <- paste0(col, "_interp")
+
+        # Apply interpolation for this column
+        tmp_df <- tmp_df %>%
+                    mutate(!!interp_col_name := zoo::na.approx(!!sym(col), time, na.rm = FALSE))
+      }
+      # Select df with new cols
+      tmp_df <- tmp_df %>% select(c('x', 'y', 'time', paste0(cols_to_interpolate, "_interp")))
+
+      # Rename new cols as original
+      colnames(tmp_df) <- c('x', 'y', 'time', cols_to_interpolate)
+
+      # Chart name
+      chart_title <- 'Interpolate missing value'
+
+    } else {
+      chart_title <- paste0('Band values across dates at loc x=', tmp_df$x[1], ' and y=', tmp_df$y[1])
+    }
 
     # Reshape data to long format
     long_df <- tmp_df %>%
@@ -554,7 +578,7 @@ raster_multiple_bands_plots <- function(raster_data,
       geom_line() +
       # facet_wrap(band_type~., scales = "free_y", nrow = 2) +
       facet_grid(band_type~., scales = "free_y") +
-      labs(title = paste0('Band values across dates at loc x=', tmp_df$x[1], ' and y=', tmp_df$y[1]))
+      labs(title = chart_title)
 
     return(p)
   }
@@ -589,11 +613,13 @@ p <- plot_func$RGB_images_first_N_dates()
 p <- plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::mako)
 p <- plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis)
 p <- plot_func$all_bands_all_dates_xy()
+p <- plot_func$all_bands_all_dates_xy(interpolate = TRUE)
 p
 
 
 raster_data <- raster_preprocess_data("/Users/phuongloan/Documents/Study/01_Master_EAGLE/Program/03_introduction_to_programming_and_geostatistics_in_EO/git_repo/Time_Series_Analysis_in_Remote Sensing/data/module1_data/T1/s2")
 plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
 p <- plot_func$all_bands_all_dates_xy()
+p <- plot_func$all_bands_all_dates_xy(interpolate = TRUE)
 p
 
