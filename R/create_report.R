@@ -1,3 +1,14 @@
+# Function to check whether plotting function has any error
+sanity_check_plot <- function(func_name) {
+  result <- try(func_name, silent = TRUE)
+  if (inherits(result, 'try-error')) {
+    cat(result)
+    return(NULL)
+  }
+  return(result)
+}
+
+
 #' Create a pdf report for tabular single value data
 #'
 #' @param original_data: raw data, ex: daily_temperature, monthly_co2, yearly_emission
@@ -13,7 +24,6 @@
 #' tabular_single_value_report_combine(daily_temperature, cname='temp', time_col='date', time_frequency='daily', output_path='output/daily_temperature_report.pdf')
 #' tabular_single_value_report_combine(monthly_co2, cname='co2', time_col='date', time_frequency='monthly', output_path='output/monthly_co2_report.pdf')
 #' tabular_single_value_report_combine(yearly_emission, cname='emission', time_col='year', time_frequency='yearly', output_path='output/yearly_emission_report.pdf')
-
 tabular_single_value_report_combine <- function(original_data, cname, time_col='date', time_frequency='daily', output_path='output/tabular_single_value_report.pdf') {
 
   # Standardize data
@@ -43,6 +53,38 @@ tabular_single_value_report_combine <- function(original_data, cname, time_col='
 }
 
 
+
+
+
+#' Create a pdf report for raster multiple bands data
+#'
+#' @param data_path, ex: 'data/sentinel2'
+#' @param suffix: file type, ex: '.tif'
+#' @param band_names: list of bands, ex: c("B2", "B3", "B4", "B8", "B11", "B12")
+#' @param RGB_bands: list of bands corresponding to Red, Green and Blue bands, ex: c("B4", "B3", "B2")
+#' @param indices_formula: list of index name and its string formula, ex: c("NDSI" = "(B3 - B11) / (B3 + B11)", "NDVI" = "(B8 - B4) / (B8 + B4)")
+#' @param band_order: order of band in band_names, ex: 1
+#' @param date_order: order of date in time_dates, ex: 1
+#' @param n_bands_explore: number of bands to explore, ex: 6
+#' @param n_first_date: number of dates to explore, ex: 6
+#' @param x_order: order of coordinate x, ex: 1
+#' @param y_order: order of coordinate y, ex: 1
+#' @param x_value, ex: NULL, or integer: 653570
+#' @param y_value, ex: NULL, or integer: 5192770
+#' @param output_path: output dir and name of report, ex: 'output/raster_multiple_bands_report.pdf'
+#'
+#' @returns a pdf report
+#' @export
+#'
+#' @examples
+#' raster_multiple_bands_report_combine(data_path, suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"),
+#'                                      RGB_bands = c("B4", "B3", "B2"),
+#'                                      indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
+#'                                                          "NDVI" = "(B8 - B4) / (B8 + B4)"),
+#'                                      band_order = 1, date_order = 1,
+#'                                      n_bands_explore = 6, n_first_date = 6,
+#'                                      x_order = 100, y_order = 50, x_value = NULL, y_value = NULL,
+#'                                      output_path='output/raster_multiple_bands_report.pdf')
 raster_multiple_bands_report_combine <- function(data_path, suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"),
                                                  RGB_bands = c("B4", "B3", "B2"),
                                                  indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
@@ -66,10 +108,10 @@ raster_multiple_bands_report_combine <- function(data_path, suffix = '.tif', ban
   # Generate single pdf reports
   fname <- strsplit(output_path, '.pdf')[[1]][1]
 
-  tabular_single_value_report_P01(plot_func, output_path=paste0(fname, '_P01.pdf'))
-  tabular_single_value_report_P02(plot_func, output_path=paste0(fname, '_P02.pdf'))
-  tabular_single_value_report_P03(plot_func, output_path=paste0(fname, '_P03.pdf'))
-  tabular_single_value_report_P04(plot_func, output_path=paste0(fname, '_P04.pdf'))
+  raster_multiple_bands_report_P01(plot_func, output_path=paste0(fname, '_P01.pdf'))
+  raster_multiple_bands_report_P02(plot_func, output_path=paste0(fname, '_P02.pdf'))
+  raster_multiple_bands_report_P03(plot_func, output_path=paste0(fname, '_P03.pdf'))
+  raster_multiple_bands_report_P04(plot_func, output_path=paste0(fname, '_P04.pdf'))
 
   n_report <- 4
 
@@ -172,17 +214,6 @@ tabular_single_value_report_P04 <- function(plot_func, output_path='output/tabul
   cat(paste0("Report saved to: ", output_path, "\n"))
 }
 
-# Function to check whether plotting function has any error
-sanity_check_plot <- function(func_name) {
-  result <- try(func_name, silent = TRUE)
-  if (inherits(result, 'try-error')) {
-    cat(result)
-    return(NULL)
-  }
-  return(result)
-}
-
-
 
 raster_multiple_bands_report_P01 <- function(plot_func, output_path='output/raster_multiple_bands_report_P01.pdf') {
   # Generate plots
@@ -226,8 +257,8 @@ raster_multiple_bands_report_P02 <- function(plot_func, output_path='output/rast
 
 # raster_multiple_bands_report_P03 <- function(plot_func, output_path='output/raster_multiple_bands_report_P03.pdf') {
 #   # Generate plots
-#   p1 <- plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::magma)
-#   p2 <- plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis)
+#   p1 <- sanity_check_plot(plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::magma))
+#   p2 <- sanity_check_plot(plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis))
 #
 #   # Combine plots
 #   n_plots = 3
@@ -297,18 +328,3 @@ raster_multiple_bands_report_P04 <- function(plot_func, output_path='output/rast
   ggsave(output_path, combined_plot, width = 8, height = sum(rel_heights)*3)
   cat(paste0("Report saved to: ", output_path, "\n"))
 }
-
-
-
-
-plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
-raster_multiple_bands_report_P01(plot_func)
-raster_multiple_bands_report_P02(plot_func)
-raster_multiple_bands_report_P03(plot_func)
-raster_multiple_bands_report_P04(plot_func)
-
-raster_multiple_bands_report_combine('data/sentinel2', x_order = 100, y_order = 50)
-raster_multiple_bands_report_combine('/Users/phuongloan/Documents/Study/01_Master_EAGLE/Program/03_introduction_to_programming_and_geostatistics_in_EO/git_repo/Time_Series_Analysis_in_Remote Sensing/data/module1_data/T1/s', x_order = 100, y_order = 50)
-
-
-

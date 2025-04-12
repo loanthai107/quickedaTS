@@ -85,22 +85,26 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 
     } else {
       # time_col == 'year'
-      n_years <- length(unique(data$year))
+      # n_years <- length(unique(data$year))
+      #
+      # # Handle too many years
+      # if (n_years > 23) {
+      #   data$year_dummy <- as.Date(paste0(data$year, "-01-01"))
+      #
+      #   n_years_break <- ceiling(n_years / 23)
+      #   n_years_break <- paste(n_years_break, 'years')
+      #
+      #   p <- ggplot(data, aes(year_dummy, diff_value)) +
+      #     scale_x_date(date_breaks = n_years_break, date_labels = "%Y") +
+      #     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      #
+      # } else {
+      #   p <- ggplot(data, aes(year, diff_value))
+      # }
 
-      # Handle too many years
-      if (n_years > 23) {
-        data$year_dummy <- as.Date(paste0(data$year, "-01-01"))
-
-        n_years_break <- ceiling(n_years / 23)
-        n_years_break <- paste(n_years_break, 'years')
-
-        p <- ggplot(data, aes(year_dummy, diff_value)) +
-          scale_x_date(date_breaks = n_years_break, date_labels = "%Y") +
-          theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-      } else {
-        p <- ggplot(data, aes(year, diff_value))
-      }
+      # Cast year string column as integer
+      data$year <- as.numeric(data$year)
+      p <- ggplot(data, aes(year, diff_value))
     }
 
     p <- p + geom_point() + geom_smooth(formula = y ~ x, method = lm) +
@@ -181,8 +185,11 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
       group_by(year, month) %>%
       summarise(avg_value = mean(value), .groups = "drop")
 
+    # Handle overlapping x-label when too many years in data
+    df_tmp$year <- as.numeric(df_tmp$year)
+
     p <- ggplot(df_tmp, aes(year, avg_value)) +
-      geom_point() +
+      geom_point(size=1) +
       geom_smooth(formula = y ~ x, method = lm) +
       facet_wrap(month~.) +
       labs(title = 'Average monthly aggregation per year')
@@ -295,13 +302,40 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
 }
 
 
+
+
+
+#' Visualization functions for raster data, multiple bands
+#'
+#' @param raster_data: standardized raster data as stars objects
+#' @param RGB_bands: list of bands corresponding to Red, Green and Blue bands, ex: c("B4", "B3", "B2")
+#' @param indices_formula: list of index name and its string formula, ex: c("NDSI" = "(B3 - B11) / (B3 + B11)", "NDVI" = "(B8 - B4) / (B8 + B4)")
+#' @param band_order: order of band in band_names, ex: 1
+#' @param date_order: order of date in time_dates, ex: 1
+#' @param n_bands_explore: number of bands to explore, ex: 6
+#' @param n_first_date: number of dates to explore, ex: 6
+#' @param x_order: order of coordinate x, ex: 1
+#' @param y_order: order of coordinate y, ex: 1
+#' @param x_value, ex: NULL, or integer: 653570
+#' @param y_value, ex: NULL, or integer: 5192770
+#'
+#' @returns plot functions
+#' @export
+#'
+#' @examples plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
+#' @examples plot_func <- raster_multiple_bands_plots(raster_data,
+#'                                          RGB_bands = c("B4", "B3", "B2"),
+#'                                          indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
+#'                                                              "NDVI" = "(B8 - B4) / (B8 + B4)"),
+#'                                          band_order = 1, date_order = 1,
+#'                                          n_bands_explore = 6, n_first_date = 6,
+#'                                          x_order = 1, y_order = 1, x_value = NULL, y_value = NULL,)
 raster_multiple_bands_plots <- function(raster_data,
-                                        RGB_bands = c("B4", "B3", "B2"),
-                                        indices_formula = c("NDSI" = "(B3 - B11) / (B3 + B11)",
-                                                            "NDVI" = "(B8 - B4) / (B8 + B4)"),
-                                        band_order = 1, date_order = 1,
-                                        n_bands_explore = 6, n_first_date = 6,
-                                        x_order = 1, y_order = 1, x_value = NULL, y_value = NULL) {
+                                        RGB_bands,
+                                        indices_formula,
+                                        band_order, date_order,
+                                        n_bands_explore, n_first_date,
+                                        x_order, y_order, x_value, y_value) {
 
   # Create a new environment/object to store our data and methods
   self <- new.env()
@@ -499,7 +533,7 @@ raster_multiple_bands_plots <- function(raster_data,
     }
     # Store names of all indices
     self$index_names <- names(indices_formula)
-    cat('Computing indices:', names(indices_formula), 'done!')
+    cat('Computing indices:', names(indices_formula), 'done!\n')
   }
 
 
@@ -551,6 +585,8 @@ raster_multiple_bands_plots <- function(raster_data,
         # Apply interpolation for this column
         tmp_df <- tmp_df %>%
                     mutate(!!interp_col_name := zoo::na.approx(!!sym(col), time, na.rm = FALSE))
+                  # mutate(NDSI_interp = zoo::na.approx(NDSI, time, na.rm = FALSE)) %>%
+                  # mutate(NDSI_roll = zoo::rollmean(NDSI_interp, k = 30, fill = NA, align = "center"))
       }
       # Select df with new cols
       tmp_df <- tmp_df %>% select(c('x', 'y', 'time', paste0(cols_to_interpolate, "_interp")))
@@ -584,42 +620,6 @@ raster_multiple_bands_plots <- function(raster_data,
   }
 
 
-
-
-
-
-
-
-
-
-
   # Return the environment with all methods
   return(self)
 }
-
-
-
-
-raster_data <- raster_preprocess_data('data/sentinel2', suffix = '.tif', band_names = c("B2", "B3", "B4", "B8", "B11", "B12"))
-plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
-
-plot_func$get_band_names()
-plot_func$get_time_dates()
-
-p <- plot_func$one_date_all_band_plot()
-p <- plot_func$one_date_scatter_band_plot()
-p <- plot_func$one_band_first_N_dates(is_gray_scale = TRUE)
-p <- plot_func$RGB_images_first_N_dates()
-p <- plot_func$one_band_first_N_dates(band_name = 'NDSI', customr_color = viridis::mako)
-p <- plot_func$one_band_first_N_dates(band_name = 'NDVI', customr_color = viridis::viridis)
-p <- plot_func$all_bands_all_dates_xy()
-p <- plot_func$all_bands_all_dates_xy(interpolate = TRUE)
-p
-
-
-raster_data <- raster_preprocess_data("/Users/phuongloan/Documents/Study/01_Master_EAGLE/Program/03_introduction_to_programming_and_geostatistics_in_EO/git_repo/Time_Series_Analysis_in_Remote Sensing/data/module1_data/T1/s2")
-plot_func <- raster_multiple_bands_plots(raster_data, x_order = 100, y_order = 50)
-p <- plot_func$all_bands_all_dates_xy()
-p <- plot_func$all_bands_all_dates_xy(interpolate = TRUE)
-p
-
