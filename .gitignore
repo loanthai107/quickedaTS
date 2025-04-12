@@ -19,7 +19,6 @@ local_*
 
 # Output files from R CMD check
 /*.Rcheck/
-output/*
 
 # RStudio files
 .Rproj.user/
