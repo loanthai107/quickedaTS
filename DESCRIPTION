@@ -3,7 +3,8 @@ Title: R package to generate reports for quick Exploratory Time Series Data Anal
 Version: 0.0.0.9000
 Authors@R: 
     person("Loan", "Thai", , "do-phuong-loan.thai@stud-mail.uni-wuerzburg.de", role = c("aut", "cre"))
-Description: R package to generate reports for quick Exploratory Time Series Data Analysis
+Description: This R package automatically generates a pdf visualization report to explore time series data quickly.
+             Currently supports tabular single value and raster multiple bands data.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
