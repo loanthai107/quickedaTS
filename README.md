@@ -52,16 +52,16 @@ tabular_single_value_report_combine(daily_temperature, cname='temp', time_col='d
 ## Example 2: Raster data
 ```R
 # Path to tif files
-data_path <- 'data/sentinel2'
+data_path <- system.file(package = "quickedaTS", "extdata/s2_sample")
 
 # List of files
 Sys.glob(paste0(data_path, '/*.tif'))
-# [1] "data/sentinel2/20180102T102421_20180102T102420_T32TPS.tif"
-# [2] "data/sentinel2/20180112T102401_20180112T102630_T32TPS.tif"
-# [3] "data/sentinel2/20180127T102259_20180127T102314_T32TPS.tif"
-# [4] "data/sentinel2/20180129T101251_20180129T101247_T32TPS.tif"
-# [5] "data/sentinel2/20180208T101151_20180208T101153_T32TPS.tif"
-# [6] "data/sentinel2/20180211T102141_20180211T102559_T32TPS.tif"
+# [1] "quickedaTS/extdata/s2_sample/20180102T102421_20180102T102420_T32TPS.tif"
+# [2] "quickedaTS/extdata/s2_sample/20180112T102401_20180112T102630_T32TPS.tif"
+# [3] "quickedaTS/extdata/s2_sample/20180127T102259_20180127T102314_T32TPS.tif"
+# [4] "quickedaTS/extdata/s2_sample/20180129T101251_20180129T101247_T32TPS.tif"
+# [5] "quickedaTS/extdata/s2_sample/20180208T101151_20180208T101153_T32TPS.tif"
+# [6] "quickedaTS/extdata/s2_sample/20180211T102141_20180211T102559_T32TPS.tif"
 
 ## Note: To use this package, the name of tif files must start with 8 characters representing for "YYYYmmdd"
 
@@ -76,8 +76,8 @@ raster_multiple_bands_report_combine(data_path, suffix = '.tif',
 
 # Report
 ```
-<object data="output/s2_sample_report-compressed.pdf" type="application/pdf">
-    <embed src="output/s2_sample_report-compressed.pdf">
+<object data="output/s2_sample_report.pdf" type="application/pdf">
+    <embed src="output/s2_sample_report.pdf">
         <p>This browser does not support PDFs. See full report at: <a href="https://github.com/loanthai107/quickedaTS/blob/main/output/s2_full_report.pdf">quickedaTS/output/s2_full_report.pdf</a>.</p>
     </embed>
 </object>
