@@ -27,4 +27,5 @@ Imports:
     tidyr,
     pdftools,
     terra,
-    stars
+    stars,
+    viridis
