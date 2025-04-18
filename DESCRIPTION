@@ -28,4 +28,5 @@ Imports:
     pdftools,
     terra,
     stars,
-    viridis
+    viridis,
+    ggplotify

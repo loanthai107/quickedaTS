@@ -291,10 +291,21 @@ tabular_single_value_plots <- function(data, cname, time_frequency = "daily") {
     ## Remove rows (last year) with NaN
     heatmap_data <- na.omit(heatmap_data)
 
-    heatmap(heatmap_data, scale = "column", main = paste(toupper(cname), "Seasonal Heatmap"))
-    p <- cowplot::ggdraw(recordPlot())
+    # heatmap(heatmap_data, scale = "column", main = paste(toupper(cname), "Seasonal Heatmap"))
+    # p <- cowplot::ggdraw(recordPlot())
+
+    ## To fix Graphics Device Issue (recordPlot() relies on the current graphics device having a valid plot)
+
+    # Open a temporary graphics device to capture the base R plot
+    p <- ggplotify::as.grob(function() {
+      heatmap(heatmap_data, scale = "column", main = paste(toupper(cname), "Seasonal Heatmap"))
+    })
+
+    # Wrap the grob in ggdraw
+    p <- cowplot::ggdraw(p)
     return(p)
   }
+
 
 
   # Return the environment with all methods
