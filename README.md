@@ -81,7 +81,7 @@ raster_multiple_bands_report_combine(data_path, suffix = '.tif',
 
 
 ## Citation
-Loan Thai (2025): quickedaTS. Zenodo. https://doi.org/10.5281/zenodo.15276260
+Loan Thai. (2025). loanthai107/quickedaTS (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.15276296
 
 ## References
 This package was developed as a final project for the course Introduction to Programming and Geostatistics held by Dr. Martin Wegmann,
