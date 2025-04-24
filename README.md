@@ -1,8 +1,5 @@
 # quickedaTS
-[![DOI](https://zenodo.org/badge/_.svg)](https://zenodo.org/badge/latestdoi/_)
-### ref DOI
-### https://www.youtube.com/watch?v=gp3D4mf6MHQ
-### https://zenodo.org/account/settings/github/
+[![DOI](https://zenodo.org/badge/961933957.svg)](https://doi.org/10.5281/zenodo.15276260)
 
 R package to generate reports for quick Exploratory Time Series Data Analysis
 
@@ -84,7 +81,7 @@ raster_multiple_bands_report_combine(data_path, suffix = '.tif',
 
 
 ## Citation
-Loan Thai (2025): quickedaTS. Zenodo. https://doi.org/10.5281/zenodo._.
+Loan Thai (2025): quickedaTS. Zenodo. https://doi.org/10.5281/zenodo.15276260
 
 ## References
 This package was developed as a final project for the course Introduction to Programming and Geostatistics held by Dr. Martin Wegmann,
